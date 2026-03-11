@@ -10,9 +10,9 @@ func decodeInt(r *bufio.Reader) (Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	num := int64(0)
+
 	sign := int64(1)
-	digits := 0
+	var digits []byte
 
 	b, err := r.Peek(1)
 	if err != nil {
@@ -32,23 +32,27 @@ func decodeInt(r *bufio.Reader) (Value, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		if b == 'e' {
 			break
 		}
-
 		if b < '0' || b > '9' {
 			return nil, errors.New("invalid integer")
 		}
-
-		num = num*10 + int64(b-'0')
-		digits++
+		digits = append(digits, b)
 	}
-	if digits == 0 {
+	if len(digits) == 0 {
 		return nil, errors.New("empty integer")
 	}
-	if num == 0 && sign == -1 {
+	if len(digits) > 1 && digits[0] == '0' {
+		return nil, errors.New("leading zero not allowed")
+	}
+	if len(digits) == 1 && sign == -1 && digits[0] == '0' {
 		return nil, errors.New("negative zero not allowed")
+	}
+
+	num := int64(0)
+	for _, d := range digits {
+		num = num*10 + int64(d-'0')
 	}
 
 	return num * sign, nil

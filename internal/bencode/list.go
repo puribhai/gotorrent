@@ -1,6 +1,9 @@
 package bencode
 
-import "bufio"
+import (
+	"bufio"
+	"errors"
+)
 
 func decodeList(r *bufio.Reader) (Value, error) {
 	_, err := r.ReadByte()
@@ -8,6 +11,7 @@ func decodeList(r *bufio.Reader) (Value, error) {
 		return nil, err
 	}
 	var list List
+	const maxListElements = 10000
 	for {
 		b, err := r.Peek(1)
 		if err != nil {
@@ -19,6 +23,9 @@ func decodeList(r *bufio.Reader) (Value, error) {
 				return nil, err
 			}
 			break
+		}
+		if len(list) >= maxListElements {
+			return nil, errors.New("list exceeds maximum element limit")
 		}
 		val, err := Decode(r)
 		if err != nil {
